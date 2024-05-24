@@ -47,3 +47,18 @@ def int_to_bits(number):
 def count_bits(num):
      binary = bin(num)[2:]
      return len(binary)
+
+def double_xor(a, b):
+    a = float_to_bits(a)
+    b = float_to_bits(b)
+    result = ''
+    for i in range(64):
+        if a[i] == b[i]:
+            result += '0'
+        else:
+            result += '1'
+
+    result = int(result, 2)
+    result = struct.pack('>Q', result)
+    result = struct.unpack('>d', result)[0]
+    return result
