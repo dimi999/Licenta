@@ -1,5 +1,6 @@
 import struct
 import numpy as np
+import pandas as pd
 
 def split_in_blocks(ts, block_size = 32):
     blocks = []
@@ -26,9 +27,30 @@ def float_to_bits(number):
 
     if len(binary_string) != 64:
         for i in range(64 - len(binary_string)):
-            binary_string = '0' + binary_string
-            
+            binary_string = '0' + binary_string    
     return binary_string
+
+#Convert a tring of bits to the number it represents in 2 complement
+def bits_to_int(bits):
+    if bits[0] == '1':
+        bits = bits[1:]
+        bits = ''.join(['1' if x == '0' else '0' for x in bits])
+        return -int(bits, 2) - 1
+    else:
+        return int(bits, 2)
+
+def bits_to_int_unsigned(bits):
+    return int(bits, 2)
+
+def bits_to_float(bits):
+    if len(bits) != 64:
+        print(bits)
+
+    bits = int(bits, 2)
+    bits = struct.pack('>Q', bits)
+    bits = struct.unpack('>d', bits)[0]
+    return bits
+
 
 def int_to_bits(number):
     if number == 0:
@@ -62,3 +84,29 @@ def double_xor(a, b):
     result = struct.pack('>Q', result)
     result = struct.unpack('>d', result)[0]
     return result
+
+def read_timestamps(df):
+    try:
+        timestamps = pd.to_datetime(df['DATE'], format='%Y-%m-%d').astype(np.int64).values // 1000000
+    except:
+        try:
+            timestamps = pd.to_datetime(df['DATE'], format='%d-%m-%Y').astype(np.int64).values // 1000000
+        except:
+            try:
+                timestamps = pd.to_datetime(df['DATE'], format='%m-%d-%Y').astype(np.int64).values // 1000000
+            except:
+                try:
+                    timestamps = pd.to_datetime(df['DATE'], format='%Y/%d/%m').astype(np.int64).values // 1000000
+                except:
+                    try:
+                        timestamps = pd.to_datetime(df['DATE'], format='%d/%m/%Y').astype(np.int64).values // 1000000
+                    except:
+                        try:
+                            timestamps = pd.to_datetime(df['DATE'], format='%m/%d/%Y').astype(np.int64).values // 1000000
+                        except:
+                            try:
+                                timestamps = pd.to_datetime(df['DATE'], format='%Y-%m').astype(np.int64).values // 1000000
+                            except:
+                                timestamps = pd.to_datetime(df['DATE'], format='%Y-%m-%d %H:%M:%S').astype(np.int64).values // 1000000
+    return timestamps
+    

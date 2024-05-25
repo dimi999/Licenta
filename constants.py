@@ -31,23 +31,20 @@ parameters_dict = {
         1: (offset, 2),
         2: (offset, 3),
         3: (bitmask, 1),
-        4: (bitmask, 2),
-        5: (trailing_zero, 0)
+        4: (trailing_zero, 0)
     }, 
     5: {
         0: (offset, 1),
         1: (offset, 2),
         2: (offset, 3),
         3: (bitmask, 1),
-        4: (bitmask, 2),
-        5: (trailing_zero, 0)
+        4: (trailing_zero, 0)
     },
     6: {
         0: (offset, 1),
         1: (offset, 2),
         2: (offset, 3),
         3: (bitmask, 1),
-        4: (bitmask, 2),
-        5: (trailing_zero, 0)
+        4: (trailing_zero, 0)
     }
 }
