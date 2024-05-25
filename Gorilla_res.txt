@@ -1,0 +1,14 @@
+monthly-beer-production.csv 1.18821303898434
+monthly-housing.csv 1.9706383680651014
+Twitter_volume_AMZN.csv 9.250794346444614
+nyc_taxi.csv 5.919101667346271
+network.csv 5.12921018893052
+monthly-housing.csv 1.9706383680651014
+cpu_utilization.csv 3.1488852823097293
+art-price.csv 2.1702304810203232
+Electric_Production.csv 1.7942869248967197
+Gold.csv 1.9319725661468874
+Electric_Production.csv 1.7942869248967197
+daily-temperatures.csv 2.3114638116394475
+oil.csv 1.5132050199458404
+transactions.csv 8.200713061175001
