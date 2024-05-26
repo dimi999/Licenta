@@ -4,7 +4,7 @@ import numpy as np
 from utilities import read_timestamps, float_to_bits, int_to_bits, bits_to_int, bits_to_float, bits_to_int_unsigned
 from transform_primitives import xor, delta_of_delta
 
-timestamps = ['monthly-beer-production.csv', 'monthly-housing.csv', 'Twitter_volume_AMZN.csv', 'nyc_taxi.csv', 'network.csv', 'monthly-housing.csv', 'cpu_utilization.csv', 'art-price.csv', 'Electric_Production.csv', 'Gold.csv', 'Electric_Production.csv', 'daily-temperatures.csv', 'oil.csv', 'transactions.csv']
+timestamps = ['monthly-beer-production.csv', 'monthly-housing.csv', 'Twitter_volume_AMZN.csv', 'nyc_taxi.csv', 'network.csv', 'cpu_utilization.csv', 'art-price.csv', 'Electric_Production.csv', 'Gold.csv', 'Electric_Production.csv', 'daily-temperatures.csv', 'oil.csv', 'transactions.csv']
 
 def compress_timestamps(timestamps):
     compressed_timestamps = ''
@@ -104,7 +104,7 @@ def decompress_metrics(compressed_metrics):
     prev_lead_zeros = 0
     prev_trail_zeros = 0
 
-    while i < len(compressed_metrics[:3500]):
+    while i < len(compressed_metrics):
         if compressed_metrics[i] == '0':
             metrics.append(metrics[-1])
             i += 1
@@ -135,26 +135,31 @@ def decompress_metrics(compressed_metrics):
                 i += 12 + important_bits
     return metrics
 
-for x in timestamps:
-    sample = x
-    print(sample)
+df = pd.read_csv('Gold.csv')
+timestamps = read_timestamps(df)
+compressed_timestamps = compress_timestamps(timestamps)
+print(len(timestamps) * 64 / len(compressed_timestamps))
 
-    df = pd.read_csv(sample)
-    timestamps = read_timestamps(df)
-    metrics = (df.iloc[:, 1]).astype(np.float64).values
+# for x in timestamps:
+#     sample = x
+#     print(sample)
 
-    metrics[np.isnan(metrics)==True] = 0
-    timestamps[np.isnan(timestamps)==True] = 0
+#     df = pd.read_csv(sample)
+#     timestamps = read_timestamps(df)
+#     metrics = (df.iloc[:, 1]).astype(np.float64).values
 
-    compressed_timestamps = compress_timestamps(timestamps)
-    compressed_metrics = compress_metrics(metrics)
-    total_comrpessoin = compressed_timestamps + compressed_metrics
+#     metrics[np.isnan(metrics)==True] = 0
+#     timestamps[np.isnan(timestamps)==True] = 0
 
-    with open('Gorilla_res.txt', 'a') as f:
-        f.write(sample)
-        f.write(' ')
-        f.write(str(len(timestamps) * 128 / len(total_comrpessoin)))
-        f.write('\n')
+#     compressed_timestamps = compress_timestamps(timestamps)
+#     compressed_metrics = compress_metrics(metrics)
+#     total_comrpessoin = compressed_timestamps + compressed_metrics
+
+#     with open('Gorilla_res.txt', 'a') as f:
+#         f.write(sample)
+#         f.write(' ')
+#         f.write(str(len(timestamps) * 128 / len(total_comrpessoin)))
+#         f.write('\n')
 
 
 

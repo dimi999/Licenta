@@ -18,7 +18,7 @@ def get_last_n(block, size=2):
     return block[-size:]
 
 def float_to_bits(number):
-    if number == 0:
+    if number == 0 and number == struct.pack('d', 0.0):
         return '0' * 64
     packed_bytes = struct.pack('>d', number)
     packed_bytes = packed_bytes.hex()
@@ -65,6 +65,11 @@ def int_to_bits(number):
             binary_string = '0' + binary_string
             
     return binary_string
+
+def unsigned_to_signed(number):
+    if number <= 2 ** 63 - 1:
+        return number
+    return -1 * (2 ** 64 - number)
 
 def count_bits(num):
      binary = bin(num)[2:]
