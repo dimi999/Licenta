@@ -1,8 +1,8 @@
 from utilities import count_bits, int_to_bits
 
 def offset(value, offset, mode):
-    if offset < 0 or offset * 8 + mode * 7 > 64:
-        return 64, ''
+    if offset < 0: #or offset * 8 + mode * 7 > 64:
+        return 100, ''
     bits = value
     ok = True
     for i in range(offset):
@@ -10,7 +10,7 @@ def offset(value, offset, mode):
             ok = False
     
     if ok == False:
-        return 64, '' #Offset too big, compression becomes lossly
+        return 100, '' #Offset too big, compression becomes lossly
     
     pad = 0
     for i in range(64 - offset * 8):
@@ -20,12 +20,15 @@ def offset(value, offset, mode):
             break
 
     if mode * 7 < 64 - offset * 8 - pad:
-        return 64, ''
+        return 100, ''
     
     new_value = ''
 
     for i in range(0, 7 * mode):
-        new_value = bits[63 - (i + offset * 8)] + new_value
+        if 63 - (i + offset * 8) >= 0:
+            new_value = bits[63 - (i + offset * 8)] + new_value
+        else:
+            new_value = '0' + new_value
 
     return 7 * mode, new_value
     
@@ -38,7 +41,7 @@ def bitmask(value, offset):
             ok = False
     
     if ok == False:
-        return 64, ''
+        return 100, ''
         #return "Offset too big, compression becomes lossly"
     
     ct_bytes = 8 - offset
@@ -67,12 +70,9 @@ def trailing_zero(value):
     ct_zero_bytes = 0
     bits = value
     i = 0
-
-    if len(bits) != 64:
-        print("ERROR", bits)
     
     if bits == '0'  * 64:
-        print("ERROR", "REICEIVED 0")
+        return 4, '1111'
 
     crt_byte = get_byte(bits, i)
     while i < ct_bytes and crt_byte == 0:

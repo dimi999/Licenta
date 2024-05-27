@@ -1,14 +1,12 @@
-monthly-beer-production.csv 1.18821303898434
-monthly-housing.csv 1.9706383680651014
-Twitter_volume_AMZN.csv 9.250794346444614
-nyc_taxi.csv 5.919101667346271
-network.csv 5.12921018893052
-monthly-housing.csv 1.9706383680651014
-cpu_utilization.csv 3.1488852823097293
-art-price.csv 2.1702304810203232
-Electric_Production.csv 1.7942869248967197
-Gold.csv 1.9319725661468874
-Electric_Production.csv 1.7942869248967197
-daily-temperatures.csv 2.3114638116394475
-oil.csv 1.5132050199458404
-transactions.csv 8.200713061175001
+grok_asg_anomaly.csv Compresia timestamps: 62.30124289024647, Compresia metrics: 1.254864688261102, Compresia totala: 2.460176770302589
+occupancy_t4013.csv Compresia timestamps: 2.5645135438371534, Compresia metrics: 1.060825056687839, Compresia totala: 1.5008254539997
+Sunspots.csv Compresia timestamps: 1.125454916004309, Compresia metrics: 1.1713466122580907, Compresia totala: 1.1479422900838923
+monthly-beer-production.csv Compresia timestamps: 1.1227242573892533, Compresia metrics: 1.2618150188460424, Compresia totala: 1.18821303898434
+monthly-housing.csv Compresia timestamps: 5.132256134051466, Compresia metrics: 1.1736690844395785, Compresia totala: 1.9104477611940298
+cpu_utilization.csv Compresia timestamps: 62.06060606060606, Compresia metrics: 1.615425065731814, Compresia totala: 3.1488852823097293
+art-price.csv Compresia timestamps: 62.06060606060606, Compresia metrics: 1.1044258695735911, Compresia totala: 2.1702304810203232
+Gold.csv Compresia timestamps: 2.2203499431828884, Compresia metrics: 1.7098929576375257, Compresia totala: 1.9319725661468874
+Electric_Production.csv Compresia timestamps: 5.208692086920869, Compresia metrics: 1.0838203301625218, Compresia totala: 1.7942869248967197
+daily-temperatures.csv Compresia timestamps: 57.76458951533135, Compresia metrics: 1.1793274400617935, Compresia totala: 2.3114638116394475
+oil.csv Compresia timestamps: 2.2990621129003714, Compresia metrics: 1.127728831213923, Compresia totala: 1.5132050199458404
+rogue_agent_key_updown.csv Compresia timestamps: 50.163692670697536, Compresia metrics: 5.944462890795659, Compresia totala: 10.629335666520843
