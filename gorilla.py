@@ -4,7 +4,7 @@ import numpy as np
 from utilities import read_timestamps, float_to_bits, int_to_bits, bits_to_int, bits_to_float, bits_to_int_unsigned
 from transform_primitives import xor, delta_of_delta
 
-timestamps = ['monthly-beer-production.csv', 'monthly-housing.csv', 'Twitter_volume_AMZN.csv', 'nyc_taxi.csv', 'network.csv', 'monthly-housing.csv', 'cpu_utilization.csv', 'art-price.csv', 'Electric_Production.csv', 'Gold.csv', 'Electric_Production.csv', 'daily-temperatures.csv', 'oil.csv', 'transactions.csv']
+timestamps = ['grok_asg_anomaly.csv', 'occupancy_t4013.csv','Sunspots.csv', 'monthly-beer-production.csv', 'monthly-housing.csv', 'cpu_utilization.csv', 'art-price.csv', 'Gold.csv', 'Electric_Production.csv', 'daily-temperatures.csv', 'oil.csv', 'rogue_agent_key_updown.csv']
 
 def compress_timestamps(timestamps):
     compressed_timestamps = ''
@@ -16,11 +16,11 @@ def compress_timestamps(timestamps):
         if crt_val == 0:
             compressed_timestamps += '0'
         elif -63 <= crt_val <= 64:
-            compressed_timestamps += '10' + int_to_bits(crt_val)[-7:]  
+            compressed_timestamps += '10' + int_to_bits(crt_val - 1)[-7:]  
         elif -255 <= crt_val <= 256:
-            compressed_timestamps += '110' + int_to_bits(crt_val)[-9:]
+            compressed_timestamps += '110' + int_to_bits(crt_val - 1)[-9:]
         elif -2047 <= crt_val <= 2048:
-            compressed_timestamps += '1110' + int_to_bits(crt_val)[-12:]
+            compressed_timestamps += '1110' + int_to_bits(crt_val - 1)[-12:]
         else:
             compressed_timestamps += '1111' + int_to_bits(crt_val)
     return compressed_timestamps
@@ -79,15 +79,15 @@ def decompress_timestamps(compressed_timestamps):
             i += 1
         elif compressed_timestamps[i + 1] == '0':
             val = bits_to_int(compressed_timestamps[i + 2:i + 9])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 9
         elif compressed_timestamps[i + 2] == '0':
             val = bits_to_int(compressed_timestamps[i + 3:i + 12])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 12
         elif compressed_timestamps[i + 3] == '0':
             val = bits_to_int(compressed_timestamps[i + 4:i + 16])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 16
         else:
             val = bits_to_int(compressed_timestamps[i + 4:i + 68])
@@ -104,7 +104,7 @@ def decompress_metrics(compressed_metrics):
     prev_lead_zeros = 0
     prev_trail_zeros = 0
 
-    while i < len(compressed_metrics[:3500]):
+    while i < len(compressed_metrics):
         if compressed_metrics[i] == '0':
             metrics.append(metrics[-1])
             i += 1
@@ -153,7 +153,7 @@ for x in timestamps:
     with open('Gorilla_res.txt', 'a') as f:
         f.write(sample)
         f.write(' ')
-        f.write(str(len(timestamps) * 128 / len(total_comrpessoin)))
+        f.write(f'Compresia timestamps: {str(len(timestamps) * 64 / len(compressed_timestamps))}, Compresia metrics: {str(len(metrics) * 64 / len(compressed_metrics))}, Compresia totala: {str((len(timestamps) * 64 + len(metrics) * 64) / len(total_comrpessoin))}')
         f.write('\n')
 
 
