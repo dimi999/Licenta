@@ -16,11 +16,11 @@ def compress_timestamps(timestamps):
         if crt_val == 0:
             compressed_timestamps += '0'
         elif -63 <= crt_val <= 64:
-            compressed_timestamps += '10' + int_to_bits(crt_val)[-7:]  
+            compressed_timestamps += '10' + int_to_bits(crt_val - 1)[-7:]  
         elif -255 <= crt_val <= 256:
-            compressed_timestamps += '110' + int_to_bits(crt_val)[-9:]
+            compressed_timestamps += '110' + int_to_bits(crt_val - 1)[-9:]
         elif -2047 <= crt_val <= 2048:
-            compressed_timestamps += '1110' + int_to_bits(crt_val)[-12:]
+            compressed_timestamps += '1110' + int_to_bits(crt_val - 1)[-12:]
         else:
             compressed_timestamps += '1111' + int_to_bits(crt_val)
     return compressed_timestamps
@@ -79,15 +79,15 @@ def decompress_timestamps(compressed_timestamps):
             i += 1
         elif compressed_timestamps[i + 1] == '0':
             val = bits_to_int(compressed_timestamps[i + 2:i + 9])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 9
         elif compressed_timestamps[i + 2] == '0':
             val = bits_to_int(compressed_timestamps[i + 3:i + 12])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 12
         elif compressed_timestamps[i + 3] == '0':
             val = bits_to_int(compressed_timestamps[i + 4:i + 16])
-            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2])
+            timestamps.append(val + 2 * timestamps[-1] - timestamps[-2] + 1)
             i += 16
         else:
             val = bits_to_int(compressed_timestamps[i + 4:i + 68])

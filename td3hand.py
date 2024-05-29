@@ -1,160 +1,138 @@
 from Env import CompressionEnv
 import gym
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
 from collections import deque
 import random
+import tensorflow as tf
+from tensorflow.keras import layers
+import gym
+
 
 env = CompressionEnv()
 
-
-class QNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(QNetwork, self).__init__()
-        self.fc1 = nn.Linear(state_dim + action_dim, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 1)
-
-    def forward(self, state, action):
-        state = state.float()
-        action = action.float()
-        x = torch.cat([state, action], 1)
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-    
-class PolicyNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action):
-        super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, action_dim)
-        self.max_action = max_action
-
-    def forward(self, state):
-        x = torch.relu(self.fc1(state))
-        x = torch.relu(self.fc2(x))
-        x = torch.sigmoid(self.fc3(x))
-        # Scale output to the action space by multiplying by the maximum action value element by element
-        x = torch.mul(x, torch.from_numpy(self.max_action))
-        
-        return x
-    
 class ReplayBuffer:
-    def __init__(self, max_size=1000000):
-        self.buffer = deque(maxlen=max_size)
+    def __init__(self, buffer_size, batch_size):
+        self.buffer_size = buffer_size
+        self.batch_size = batch_size
+        self.buffer = []
+        self.position = 0
 
     def add(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, reward, next_state, done))
+        if len(self.buffer) < self.buffer_size:
+            self.buffer.append(None)
+        self.buffer[self.position] = (state, action, reward, next_state, done)
+        self.position = (self.position + 1) % self.buffer_size
 
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        states, actions, rewards, next_states, dones = zip(*batch)
-        return np.array(states), np.array(actions), np.array(rewards), np.array(next_states), np.array(dones)
+    def sample(self):
+        batch = np.random.choice(len(self.buffer), self.batch_size, replace=False)
+        state, action, reward, next_state, done = zip(*[self.buffer[idx] for idx in batch])
+        return np.array(state), np.array(action), np.array(reward), np.array(next_state), np.array(done)
 
-    def size(self):
+    def __len__(self):
         return len(self.buffer)
 
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.shape[0]
-max_action = env.action_space.high
+def build_actor(state_shape, action_shape):
+    inputs = layers.Input(shape=state_shape)
+    out = layers.Dense(400, activation='relu')(inputs)
+    out = layers.Dense(300, activation='relu')(out)
+    outputs = layers.Dense(action_shape[0], activation='tanh')(out)
+    model = tf.keras.Model(inputs, outputs)
+    return model
 
-policy_net = PolicyNetwork(state_dim, action_dim, max_action)
-q_net1 = QNetwork(state_dim, action_dim)
-q_net2 = QNetwork(state_dim, action_dim)
+def build_critic(state_shape, action_shape):
+    state_input = layers.Input(shape=state_shape)
+    action_input = layers.Input(shape=action_shape)
+    concat = layers.Concatenate()([state_input, action_input])
+    
+    out = layers.Dense(400, activation='relu')(concat)
+    out = layers.Dense(300, activation='relu')(out)
+    outputs = layers.Dense(1)(out)
+    
+    model = tf.keras.Model([state_input, action_input], outputs)
+    return model
 
-target_policy_net = PolicyNetwork(state_dim, action_dim, max_action)
-target_q_net1 = QNetwork(state_dim, action_dim)
-target_q_net2 = QNetwork(state_dim, action_dim)
+class DDPGAgent:
+    def __init__(self, state_shape, action_shape, action_bounds, actor_lr=0.001, critic_lr=0.002, gamma=0.99, tau=0.005):
+        self.state_shape = state_shape
+        self.action_shape = action_shape
+        self.action_bounds = action_bounds
+        self.gamma = gamma
+        self.tau = tau
+        
+        self.actor = build_actor(state_shape, action_shape)
+        self.critic = build_critic(state_shape, action_shape)
+        
+        self.target_actor = build_actor(state_shape, action_shape)
+        self.target_critic = build_critic(state_shape, action_shape)
+        
+        self.actor_optimizer = tf.keras.optimizers.Adam(learning_rate=actor_lr)
+        self.critic_optimizer = tf.keras.optimizers.Adam(learning_rate=critic_lr)
+        
+        self.update_target(self.target_actor.variables, self.actor.variables, tau=1)
+        self.update_target(self.target_critic.variables, self.critic.variables, tau=1)
+    
+    def update_target(self, target_weights, weights, tau):
+        for (target, weight) in zip(target_weights, weights):
+            target.assign(weight * tau + target * (1 - tau))
+    
+    def policy(self, state, noise_std=0.2):
+        state = np.expand_dims(state, axis=0).astype(np.float32)
+        action = self.actor(state).numpy()[0]
+        noise = np.random.normal(0, noise_std, size=self.action_shape)
+        action = np.clip(action + noise, -self.action_bounds, self.action_bounds)
+        return action
+    
+    def train(self, replay_buffer):
+        if len(replay_buffer) < replay_buffer.batch_size:
+            return
+        
+        states, actions, rewards, next_states, dones = replay_buffer.sample()
+        
+        with tf.GradientTape() as tape:
+            target_actions = self.target_actor(next_states)
+            target_q_values = self.target_critic([next_states, target_actions])
+            target_q_values = rewards + self.gamma * target_q_values * (1 - dones)
+            
+            q_values = self.critic([states, actions])
+            critic_loss = tf.reduce_mean(tf.square(target_q_values - q_values))
+        
+        critic_grads = tape.gradient(critic_loss, self.critic.trainable_variables)
+        self.critic_optimizer.apply_gradients(zip(critic_grads, self.critic.trainable_variables))
+        
+        with tf.GradientTape() as tape:
+            actions = self.actor(states)
+            critic_value = self.critic([states, actions])
+            actor_loss = -tf.reduce_mean(critic_value)
+        
+        actor_grads = tape.gradient(actor_loss, self.actor.trainable_variables)
+        self.actor_optimizer.apply_gradients(zip(actor_grads, self.actor.trainable_variables))
+        
+        self.update_target(self.target_actor.variables, self.actor.variables, self.tau)
+        self.update_target(self.target_critic.variables, self.critic.variables, self.tau)
 
-# Copy weights from the original networks to the target networks
-target_policy_net.load_state_dict(policy_net.state_dict())
-target_q_net1.load_state_dict(q_net1.state_dict())
-target_q_net2.load_state_dict(q_net2.state_dict())
+state_shape = env.observation_space.shape
+action_shape = env.action_space.shape
+action_bounds = env.action_space.high
 
-policy_optimizer = optim.Adam(policy_net.parameters(), lr=3e-4)
-q_optimizer1 = optim.Adam(q_net1.parameters(), lr=3e-4)
-q_optimizer2 = optim.Adam(q_net2.parameters(), lr=3e-4)
+agent = DDPGAgent(state_shape, action_shape, action_bounds)
+replay_buffer = ReplayBuffer(buffer_size=100000, batch_size=64)
 
-def td3_train(replay_buffer, batch_size=100, gamma=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_delay=2):
-    # Sample from replay buffer
-    states, actions, rewards, next_states, dones = replay_buffer.sample(batch_size)
-    states = torch.from_numpy(states)
-    actions = torch.from_numpy(actions)
-    rewards = torch.from_numpy(rewards).unsqueeze(1)
-    next_states = torch.from_numpy(next_states)
-    dones = torch.from_numpy(dones).unsqueeze(1).long()
-
-    # Compute target actions with noise
-    noise = actions.data.normal_(0, policy_noise)
-    noise = noise.clamp(-noise_clip, noise_clip)
-    next_actions = target_policy_net(next_states) + noise
-    next_actions = next_actions.clamp(torch.from_numpy(-max_action), torch.from_numpy(max_action))
-
-    # Compute target Q values
-    target_q1 = target_q_net1(next_states, next_actions).float()
-    target_q2 = target_q_net2(next_states, next_actions).float()
-    target_q = torch.min(target_q1, target_q2).float()
-    target_q = rewards.float() + ((1 - dones) * gamma * target_q).detach().float()
-
-    # Update Q-networks
-    current_q1 = q_net1(states, actions).float()
-    current_q2 = q_net2(states, actions).float()
-    q_loss1 = nn.MSELoss()(current_q1, target_q).float()
-    q_loss2 = nn.MSELoss()(current_q2, target_q).float()
-    q_optimizer1.zero_grad()
-    q_optimizer2.zero_grad()
-    q_loss1.backward()
-    q_loss2.backward()
-    q_optimizer1.step()
-    q_optimizer2.step()
-
-    # Delayed policy updates
-    if global_step % policy_delay == 0:
-        # Compute policy loss
-        policy_loss = -q_net1(states, policy_net(states)).mean()
-        policy_optimizer.zero_grad()
-        policy_loss.backward()
-        policy_optimizer.step()
-
-        # Update target networks
-        for param, target_param in zip(policy_net.parameters(), target_policy_net.parameters()):
-            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
-
-        for param, target_param in zip(q_net1.parameters(), target_q_net1.parameters()):
-            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
-
-        for param, target_param in zip(q_net2.parameters(), target_q_net2.parameters()):
-            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
-
-replay_buffer = ReplayBuffer()
-
-num_episodes = 1000
-batch_size = 100
-global_step = 0
-print(action_dim, env.action_space.high)
-for episode in range(num_episodes):
-    state, _ = env.reset()
-    original = 0
-    ratio = 0
-
-    while True:
-        action = policy_net(torch.FloatTensor(state).unsqueeze(0)).detach().numpy()[0]
-        next_state, reward, done, _, info = env.step(action)
+episodes = 100
+for episode in range(episodes):
+    state = env.reset()
+    episode_reward = 0
+    
+    for step in range(200):
+        action = agent.policy(state)
+        next_state, reward, done, _ = env.step(action)
         replay_buffer.add(state, action, reward, next_state, done)
-
+        
+        agent.train(replay_buffer)
+        
         state = next_state
-        original += 32 * 64
-        ratio += len(info['block'])
-        global_step += 1
-
-        if replay_buffer.size() > batch_size:
-            td3_train(replay_buffer, batch_size)
-
+        episode_reward += reward
+        
         if done:
             break
-
-    print(f"Episode {episode + 1}, Compression Ratio: {original / ratio}, timestmp_ratio: {env.timestamps_ratio}")
+    
+    print(f"Episode: {episode}, Reward: {episode_reward}")

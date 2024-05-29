@@ -25,19 +25,25 @@ print(values)
 
 huff_dict = dict()
 
-for x in timestamps:
-    if x in huff_dict:
-        huff_dict[x] += 1
-    else:
-        huff_dict[x] = 1
+
+for i in range(64):
+    huff_dict[i] = 64 - i
+
+#for x in timestamps:
+#    if x in huff_dict:
+#        huff_dict[x] += 1
+#    else:
+#        huff_dict[x] = 1
         
-for x in values:
-    if x in huff_dict:
-        huff_dict[x] += 1
-    else:
-        huff_dict[x] = 1
+#for x in values:
+#    if x in huff_dict:
+#        huff_dict[x] += 1
+#    else:
+#        huff_dict[x] = 1
         
-print(len(huff_dict))
+#print(len(huff_dict))
+codec2 = HuffmanCodec.from_frequencies(huff_dict)
+codec2.print_code_table()
 
 #%%
 codec = HuffmanCodec.from_frequencies(huff_dict)
