@@ -75,6 +75,20 @@ def count_bits(num):
      binary = bin(num)[2:]
      return len(binary)
 
+def get_bytes(num):
+    #return the value of the bytes of num
+    bits = ''
+    if isinstance(num, int):
+        bits = int_to_bits(num)
+    else:
+        bits = float_to_bits(num)
+
+    bytes = []
+    for i in range(0, 64, 8):
+        bytes.append(bits_to_int_unsigned(bits[i:i+8])) 
+    
+    return bytes
+
 def double_xor(a, b):
     a = float_to_bits(a)
     b = float_to_bits(b)
